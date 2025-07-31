@@ -17,7 +17,7 @@ param(
     [string]$Branch = "main"
 )
 
-Write-Host "DEBUG: Org='$Org' Repo='$Repo' Token set=$($Token -ne $null)"
+Write-Host "DEBUG: Org='$Org' Repo='$Repo' Token set=$($null -ne $Token)"
 if (-not $Org)   { throw "Missing required param: Org" }
 if (-not $Token) { throw "Missing required param: Token" }
 if (-not $Repo)  { throw "Missing required param: Repo" }
@@ -25,7 +25,7 @@ if (-not $Repo)  { throw "Missing required param: Repo" }
 $ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = 'Stop'
 
-function Encode-Base64([string]$Text) {
+function Convert-ToBase64([string]$Text) {
     [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Text))
 }
 
@@ -81,7 +81,7 @@ function Invoke-GitHubPagedApi {
     return $results
 }
 
-function Order-Array {
+function Order-GitHubArray {
     param(
         [array]$Array,
         [string]$Column,
@@ -116,7 +116,7 @@ function Push-Report-To-GitHub {
     )
     # 1. Read file, encode to base64
     $contentRaw = [System.IO.File]::ReadAllText($LocalPath)
-    $contentB64 = Encode-Base64 $contentRaw
+    $contentB64 = Convert-ToBase64 $contentRaw
 
     # 2. Try to get existing file SHA (for update) - Fixed to handle both formats
     $owner = if ($Repo.Contains('/')) { ($Repo.Split('/'))[0] } else { $Org }
@@ -224,8 +224,8 @@ $ReportsDir = "reports"
 if (-not (Test-Path $ReportsDir)) { New-Item -ItemType Directory -Path $ReportsDir | Out-Null }
 $sshCsv = "$ReportsDir/$Org-SSH-list.csv"
 $patCsv = "$ReportsDir/$Org-PAT-list.csv"
-$sshArray = Order-Array -Array $sshArray -Column $SortSshColumn -Order $SortSshOrder
-$patArray = Order-Array -Array $patArray -Column $SortPatColumn -Order $SortPatOrder
+$sshArray = Order-GitHubArray -Array $sshArray -Column $SortSshColumn -Order $SortSshOrder
+$patArray = Order-GitHubArray -Array $patArray -Column $SortPatColumn -Order $SortPatOrder
 Write-CsvFile $sshArray $sshCsv
 Write-CsvFile $patArray $patCsv
 Push-Report-To-GitHub -FilePath "reports/$Org-SSH-list.csv" -LocalPath $sshCsv -CommitMsg "$Today Authorization report"
@@ -288,7 +288,7 @@ do {
     $cursorID = $result.data.organization.repositories.pageInfo.endCursor
 } while ($hasNextPage)
 
-$deployKeyArray = Order-Array -Array $deployKeyArray -Column $SortDeployKeyColumn -Order $SortDeployKeyOrder
+$deployKeyArray = Order-GitHubArray -Array $deployKeyArray -Column $SortDeployKeyColumn -Order $SortDeployKeyOrder
 $deployKeyCsv = "$ReportsDir/$Org-DEPLOYKEY-list.csv"
 Write-CsvFile $deployKeyArray $deployKeyCsv
 Push-Report-To-GitHub -FilePath "reports/$Org-DEPLOYKEY-list.csv" -LocalPath $deployKeyCsv -CommitMsg "$Today Authorization report"
@@ -383,7 +383,7 @@ foreach ($auth in $appInstalls) {
         repoadder = $repoadder
     }
 }
-$appArray = Order-Array -Array $appArray -Column $SortAppColumn -Order $SortAppOrder
+$appArray = Order-GitHubArray -Array $appArray -Column $SortAppColumn -Order $SortAppOrder
 $appCsv = "$ReportsDir/$Org-APP-list.csv"
 Write-CsvFile $appArray $appCsv
 Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.csv" -LocalPath $appCsv -CommitMsg "$Today Authorization report"
@@ -391,3 +391,6 @@ if ($JsonExport -eq "true") {
     $appJson = "$ReportsDir/$Org-APP-list.json"
     Write-JsonFile $appArray $appJson
     Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.json" -LocalPath
+}
+
+Write-Host "All reports generated in: $ReportsDir and pushed to $Repo@$Branch"
