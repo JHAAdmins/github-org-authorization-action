@@ -52,6 +52,10 @@ function Invoke-GitHubPagedApi {
     param(
         [string]$Uri
     )
+    Write-Host "DEBUG: Entered Invoke-GitHubPagedApi with Uri='$Uri'"
+    if ([string]::IsNullOrWhiteSpace($Uri)) {
+        throw "Invoke-GitHubPagedApi called with blank Uri"
+    }
     $results = @()
     $page = 1
     while ($true) {
