@@ -60,8 +60,12 @@ function Invoke-GitHubPagedApi {
     $results = @()
     $page = 1
     while ($true) {
-        Write-Host "DEBUG: Loop start - `\$baseUri='$baseUri', `\$page=$page"
-        $pagedUri = if ($baseUri -match "\?") { "$baseUri&per_page=100&page=$page" } else { "$baseUri?per_page=100&page=$page" }
+        Write-Host "DEBUG: Loop start - baseUri='$baseUri', page=$page"
+        $pagedUri = if ($baseUri.Contains("?")) { 
+            "$baseUri&per_page=100&page=$page" 
+        } else { 
+            "$baseUri?per_page=100&page=$page" 
+        }
         Write-Host "DEBUG: Calling Invoke-GitHubApi with pagedUri='$pagedUri'"
         $resp = Invoke-GitHubApi -Uri $pagedUri
         if ($null -eq $resp) { break }
@@ -115,8 +119,8 @@ function Push-Report-To-GitHub {
     $contentB64 = Encode-Base64 $contentRaw
 
     # 2. Try to get existing file SHA (for update) - Fixed to handle both formats
-    $owner = if ($Repo -contains '/') { ($Repo.Split('/'))[0] } else { $Org }
-    $repoName = if ($Repo -contains '/') { ($Repo.Split('/'))[1] } else { $Repo }
+    $owner = if ($Repo.Contains('/')) { ($Repo.Split('/'))[0] } else { $Org }
+    $repoName = if ($Repo.Contains('/')) { ($Repo.Split('/'))[1] } else { $Repo }
     $getUri = "https://api.github.com/repos/$owner/$repoName/contents/$FilePath`?ref=$Branch"
     $sha = $null
     try {
@@ -386,7 +390,4 @@ Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.csv" -LocalPath $appCsv -
 if ($JsonExport -eq "true") {
     $appJson = "$ReportsDir/$Org-APP-list.json"
     Write-JsonFile $appArray $appJson
-    Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.json" -LocalPath $appJson -CommitMsg "$Today Authorization report"
-}
-
-Write-Host "All reports generated in: $ReportsDir and pushed to $Repo@$Branch"
+    Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.json" -LocalPath
