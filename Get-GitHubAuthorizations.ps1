@@ -60,7 +60,7 @@ function Invoke-GitHubPagedApi {
     $results = @()
     $page = 1
     while ($true) {
-        Write-Host "DEBUG: Loop start - \$baseUri='$baseUri', \$page=$page"
+        Write-Host "DEBUG: Loop start - `\$baseUri='$baseUri', `\$page=$page"
         $pagedUri = if ($baseUri -match "\?") { "$baseUri&per_page=100&page=$page" } else { "$baseUri?per_page=100&page=$page" }
         Write-Host "DEBUG: Calling Invoke-GitHubApi with pagedUri='$pagedUri'"
         $resp = Invoke-GitHubApi -Uri $pagedUri
