@@ -56,10 +56,13 @@ function Invoke-GitHubPagedApi {
     if ([string]::IsNullOrWhiteSpace($Uri)) {
         throw "Invoke-GitHubPagedApi called with blank Uri"
     }
+    $baseUri = $Uri
     $results = @()
     $page = 1
     while ($true) {
-        $pagedUri = if ($Uri -match "\?") { "$Uri&per_page=100&page=$page" } else { "$Uri?per_page=100&page=$page" }
+        Write-Host "DEBUG: Loop start - \$baseUri='$baseUri', \$page=$page"
+        $pagedUri = if ($baseUri -match "\?") { "$baseUri&per_page=100&page=$page" } else { "$baseUri?per_page=100&page=$page" }
+        Write-Host "DEBUG: Calling Invoke-GitHubApi with pagedUri='$pagedUri'"
         $resp = Invoke-GitHubApi -Uri $pagedUri
         if ($null -eq $resp) { break }
         if ($resp -is [System.Collections.IEnumerable] -and -not ($resp -is [string])) {
