@@ -17,6 +17,11 @@ param(
     [string]$Branch = "main"
 )
 
+Write-Host "DEBUG: Org='$Org' Repo='$Repo' Token set=$($Token -ne $null)"
+if (-not $Org)   { throw "Missing required param: Org" }
+if (-not $Token) { throw "Missing required param: Token" }
+if (-not $Repo)  { throw "Missing required param: Repo" }
+
 $ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = 'Stop'
 
@@ -33,6 +38,9 @@ function Invoke-GitHubApi {
     )
     $Headers['Authorization'] = "Bearer $Token"
     $Headers['Accept'] = "application/vnd.github+json"
+
+     Write-Host "DEBUG: Invoking GitHub API with Uri='$Uri'"
+     
     if ($Method -eq 'GET') {
         Invoke-RestMethod -Uri $Uri -Headers $Headers -Method $Method
     } else {
