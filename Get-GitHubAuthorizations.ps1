@@ -114,9 +114,10 @@ function Push-Report-To-GitHub {
     $contentRaw = [System.IO.File]::ReadAllText($LocalPath)
     $contentB64 = Encode-Base64 $contentRaw
 
-    # 2. Try to get existing file SHA (for update)
-    $owner, $repo = $Repo.Split('/')
-    $getUri = "https://api.github.com/repos/$owner/$repo/contents/$FilePath`?ref=$Branch"
+    # 2. Try to get existing file SHA (for update) - Fixed to handle both formats
+    $owner = if ($Repo -contains '/') { ($Repo.Split('/'))[0] } else { $Org }
+    $repoName = if ($Repo -contains '/') { ($Repo.Split('/'))[1] } else { $Repo }
+    $getUri = "https://api.github.com/repos/$owner/$repoName/contents/$FilePath`?ref=$Branch"
     $sha = $null
     try {
         $resp = Invoke-GitHubApi -Uri $getUri -Method 'GET'
@@ -140,7 +141,7 @@ function Push-Report-To-GitHub {
     if ($sha) { $body.sha = $sha }
 
     # 4. Upload
-    $putUri = "https://api.github.com/repos/$owner/$repo/contents/$FilePath"
+    $putUri = "https://api.github.com/repos/$owner/$repoName/contents/$FilePath"
     Invoke-GitHubApi -Uri $putUri -Method 'PUT' -Body $body | Out-Null
     Write-Host "Pushed $FilePath"
 }
@@ -219,8 +220,8 @@ $ReportsDir = "reports"
 if (-not (Test-Path $ReportsDir)) { New-Item -ItemType Directory -Path $ReportsDir | Out-Null }
 $sshCsv = "$ReportsDir/$Org-SSH-list.csv"
 $patCsv = "$ReportsDir/$Org-PAT-list.csv"
-$sshArray = Order-Array $sshArray $SortSshColumn $SortSshOrder
-$patArray = Order-Array $patArray $SortPatColumn $SortPatOrder
+$sshArray = Order-Array -Array $sshArray -Column $SortSshColumn -Order $SortSshOrder
+$patArray = Order-Array -Array $patArray -Column $SortPatColumn -Order $SortPatOrder
 Write-CsvFile $sshArray $sshCsv
 Write-CsvFile $patArray $patCsv
 Push-Report-To-GitHub -FilePath "reports/$Org-SSH-list.csv" -LocalPath $sshCsv -CommitMsg "$Today Authorization report"
@@ -237,9 +238,9 @@ if ($JsonExport -eq "true") {
 # 3. Retrieve and push Deploy Keys (GraphQL)
 Write-Host "Retrieving deploy keys..."
 $deployKeysQuery = @'
-query (\$org: String!, \$cursorID: String) {
-  organization(login: \$org) {
-    repositories(first: 100, after: \$cursorID) {
+query ($org: String!, $cursorID: String) {
+  organization(login: $org) {
+    repositories(first: 100, after: $cursorID) {
       nodes {
         name
         deployKeys(first: 100) {
@@ -283,7 +284,7 @@ do {
     $cursorID = $result.data.organization.repositories.pageInfo.endCursor
 } while ($hasNextPage)
 
-$deployKeyArray = Order-Array $deployKeyArray $SortDeployKeyColumn $SortDeployKeyOrder
+$deployKeyArray = Order-Array -Array $deployKeyArray -Column $SortDeployKeyColumn -Order $SortDeployKeyOrder
 $deployKeyCsv = "$ReportsDir/$Org-DEPLOYKEY-list.csv"
 Write-CsvFile $deployKeyArray $deployKeyCsv
 Push-Report-To-GitHub -FilePath "reports/$Org-DEPLOYKEY-list.csv" -LocalPath $deployKeyCsv -CommitMsg "$Today Authorization report"
@@ -378,7 +379,7 @@ foreach ($auth in $appInstalls) {
         repoadder = $repoadder
     }
 }
-$appArray = Order-Array $appArray $SortAppColumn $SortAppOrder
+$appArray = Order-Array -Array $appArray -Column $SortAppColumn -Order $SortAppOrder
 $appCsv = "$ReportsDir/$Org-APP-list.csv"
 Write-CsvFile $appArray $appCsv
 Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.csv" -LocalPath $appCsv -CommitMsg "$Today Authorization report"
