@@ -221,7 +221,7 @@ if ($JsonExport -eq "true") {
 
 # 3. Retrieve and push Deploy Keys (GraphQL)
 Write-Host "Retrieving deploy keys..."
-$deployKeysQuery = @"
+$deployKeysQuery = @'
 query (\$org: String!, \$cursorID: String) {
   organization(login: \$org) {
     repositories(first: 100, after: \$cursorID) {
@@ -244,7 +244,7 @@ query (\$org: String!, \$cursorID: String) {
     }
   }
 }
-"@
+'@
 $deployKeyArray = @()
 $cursorID = $null
 do {
