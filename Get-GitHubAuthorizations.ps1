@@ -390,7 +390,7 @@ Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.csv" -LocalPath $appCsv -
 if ($JsonExport -eq "true") {
     $appJson = "$ReportsDir/$Org-APP-list.json"
     Write-JsonFile $appArray $appJson
-    Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.json" -LocalPath
+    Push-Report-To-GitHub -FilePath "reports/$Org-APP-list.json" -LocalPath $appJson -CommitMsg "$Today Authorization report"
 }
 
 Write-Host "All reports generated in: $ReportsDir and pushed to $Repo@$Branch"
